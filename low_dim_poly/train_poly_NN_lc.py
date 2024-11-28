@@ -104,9 +104,8 @@ def initialize_network(model):
             init.zeros_(m.bias)
 
 # Training configurations
-train_sizes = [10,500,1000, 5000, 10000, 20000,50000,100000]  # Different training set sizes
+train_sizes = [10, 500, 1000, 5000, 10000, 20000, 50000, 100000]  # Different training set sizes
 test_size = 20000  # Fixed test set size
-n_samples = 2 * max(train_sizes)  # Total dataset size as 2 * max training size
 ambient_dim = 20
 latent_dim = 3
 degree = 5
@@ -127,7 +126,6 @@ os.makedirs(base_dir, exist_ok=True)
 hyperparams = {
     'train_sizes': train_sizes,
     'test_size': test_size,
-    'total_samples': n_samples,
     'ambient_dim': ambient_dim,
     'latent_dim': latent_dim,
     'degree': degree,
@@ -153,25 +151,6 @@ hyperparams = {
 with open(os.path.join(base_dir, 'hyperparameters.json'), 'w') as f:
     json.dump(hyperparams, f, indent=4)
 
-# Generate full dataset
-X, y, U, coeff_vec = generate_latent_poly_data(
-    n_samples=n_samples,
-    ambient_dim=ambient_dim, 
-    latent_dim=latent_dim,
-    degree=degree,
-    noise_std=noise_std,
-    random_state=42
-)
-
-# Convert to PyTorch tensors
-X_full = torch.FloatTensor(X)
-y_full = torch.FloatTensor(y).reshape(-1, 1)
-
-# Create fixed test set
-X_remaining, X_test, y_remaining, y_test = train_test_split(
-    X_full, y_full, test_size=test_size, random_state=42
-)
-
 # Initialize results array: [initial_train_error, initial_test_error, best_train_error, best_test_error]
 results = np.zeros((4, len(train_sizes)))
 
@@ -179,10 +158,27 @@ results = np.zeros((4, len(train_sizes)))
 for size_idx, train_size in enumerate(train_sizes):
     print(f"\nTraining with {train_size} samples")
     
-    # Sample training data from remaining data
-    indices = np.random.choice(len(X_remaining), train_size, replace=False)
-    X_train = X_remaining[indices]
-    y_train = y_remaining[indices]
+    # Generate new dataset for this experiment
+    total_size = train_size + test_size
+    X, y, U, coeff_vec = generate_latent_poly_data(
+        n_samples=total_size,
+        ambient_dim=ambient_dim, 
+        latent_dim=latent_dim,
+        degree=degree,
+        noise_std=noise_std,
+        random_state=42
+    )
+    
+    # Split into train and test
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=42
+    )
+    
+    # Convert to PyTorch tensors
+    X_train = torch.FloatTensor(X_train)
+    y_train = torch.FloatTensor(y_train).reshape(-1, 1)
+    X_test = torch.FloatTensor(X_test)
+    y_test = torch.FloatTensor(y_test).reshape(-1, 1)
     
     # Create data loaders
     train_dataset = TensorDataset(X_train, y_train)

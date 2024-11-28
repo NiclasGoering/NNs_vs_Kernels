@@ -6,13 +6,11 @@ import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
-import numpy as np
 import torch.nn.init as init
-from torch.utils.data import TensorDataset, DataLoader
-from sklearn.model_selection import train_test_split
-import numpy as np
 from math import sqrt
+import os
+import json
+from datetime import datetime
 print = partial(print, flush=True)
 
 def generate_polynomials(r, d):
@@ -104,6 +102,10 @@ def initialize_network(model):
             init.normal_(m.weight, mean=0.0, std=0.1 / sqrt(m.in_features))
             init.zeros_(m.bias)
 
+# Create results directory
+results_dir = os.path.join('results', f'polynomial_learning_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+os.makedirs(results_dir, exist_ok=True)
+
 # Generate data
 n_samples = 100000
 ambient_dim = 20
@@ -142,14 +144,13 @@ initialize_network(model)
 # Training parameters
 initial_lr = 0.0005
 num_epochs = 2000
-weight_decay = 1e-4  # Added weight decay
+weight_decay = 1e-4
 criterion = nn.MSELoss()
 
 # Initialize optimizer with weight decay
 optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr, weight_decay=weight_decay)
 
 # Learning rate scheduler
-# Reduce learning rate by factor of 0.5 every 1000 epochs
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
 
 # Lists to store losses
@@ -193,8 +194,6 @@ for epoch in range(num_epochs):
               f'Train Loss: {train_loss:.6f}, '
               f'Test Loss: {test_loss:.6f}')
 
-
-
 # Final evaluation
 model.eval()
 with torch.no_grad():
@@ -206,3 +205,28 @@ with torch.no_grad():
 print(f'\nFinal Results:')
 print(f'Training MSE: {final_train_loss:.6f}')
 print(f'Test MSE: {final_test_loss:.6f}')
+
+# Save results
+results = {
+    'train_losses': train_losses,
+    'test_losses': test_losses,
+    'learning_rates': learning_rates,
+    'final_train_loss': final_train_loss,
+    'final_test_loss': final_test_loss,
+    'parameters': {
+        'n_samples': n_samples,
+        'ambient_dim': ambient_dim,
+        'latent_dim': latent_dim,
+        'degree': degree,
+        'noise_std': noise_std,
+        'initial_lr': initial_lr,
+        'num_epochs': num_epochs,
+        'weight_decay': weight_decay
+    }
+}
+
+# Save results to JSON file
+with open(os.path.join(results_dir, 'training_results.json'), 'w') as f:
+    json.dump(results, f, indent=4)
+
+print(f"\nResults saved in: {results_dir}")
