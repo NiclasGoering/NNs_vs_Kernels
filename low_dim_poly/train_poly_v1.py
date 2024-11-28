@@ -107,11 +107,12 @@ results_dir = os.path.join('results', f'polynomial_learning_{datetime.now().strf
 os.makedirs(results_dir, exist_ok=True)
 
 # Generate data
-n_samples = 100000
+n_samples = 200000
 ambient_dim = 20
 latent_dim = 3
 degree = 5
 noise_std = 0.0
+batch_size=64
 
 X, y, U, coeff_vec = generate_latent_poly_data(
     n_samples=n_samples,
@@ -134,11 +135,11 @@ X_train, X_test, y_train, y_test = train_test_split(
 # Create data loaders
 train_dataset = TensorDataset(X_train, y_train)
 test_dataset = TensorDataset(X_test, y_test)
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=len(test_dataset))
 
 # Initialize model
-model = DeepNet(input_dim=ambient_dim, hidden_dim=800)
+model = DeepNet(input_dim=ambient_dim, hidden_dim=400)
 initialize_network(model)
 
 # Training parameters
