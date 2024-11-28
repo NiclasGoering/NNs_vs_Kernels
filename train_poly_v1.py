@@ -90,8 +90,6 @@ class DeepNet(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            #nn.Linear(hidden_dim, hidden_dim),
-            #nn.ReLU(),
             nn.Linear(hidden_dim, 1)
         )
     
@@ -138,7 +136,7 @@ train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=len(test_dataset))
 
 # Initialize model
-model = DeepNet(input_dim=ambient_dim, hidden_dim=400)
+model = DeepNet(input_dim=ambient_dim, hidden_dim=800)
 initialize_network(model)
 
 # Training parameters
@@ -195,32 +193,7 @@ for epoch in range(num_epochs):
               f'Train Loss: {train_loss:.6f}, '
               f'Test Loss: {test_loss:.6f}')
 
-# Plotting training curves
-plt.figure(figsize=(15, 5))
 
-# Loss plot
-plt.subplot(1, 2, 1)
-plt.plot(train_losses, label='Train Loss')
-plt.plot(test_losses, label='Test Loss')
-plt.xlabel('Epoch')
-plt.ylabel('MSE Loss')
-plt.title('Training and Test Loss Over Time')
-plt.legend()
-plt.yscale('log')
-plt.grid(True)
-
-# Learning rate plot
-plt.subplot(1, 2, 2)
-plt.plot(learning_rates, label='Learning Rate')
-plt.xlabel('Epoch')
-plt.ylabel('Learning Rate')
-plt.title('Learning Rate Schedule')
-plt.yscale('log')
-plt.grid(True)
-plt.legend()
-
-plt.tight_layout()
-plt.show()
 
 # Final evaluation
 model.eval()
