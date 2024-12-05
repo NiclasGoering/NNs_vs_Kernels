@@ -2,3 +2,4 @@ env_dev_1/
 *.out
 results/
 *.sh
+*.json

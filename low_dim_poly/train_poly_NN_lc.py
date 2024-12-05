@@ -7,12 +7,12 @@ import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 import torch.nn.init as init
 from datetime import datetime
 from copy import deepcopy
 import json
 from math import sqrt
+import torch.optim as optim
 
 print = partial(print, flush=True)
 
@@ -112,14 +112,14 @@ degree = 5
 noise_std = 0.0
 hidden_dim = 400
 initial_lr = 0.0005
-num_epochs = 2000
+num_epochs = 1500
 weight_decay = 1e-4
 batch_size = 64
 criterion = nn.MSELoss()
 
 # Create results directory structure
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-base_dir = os.path.join('results', f'training_run_{timestamp}')
+base_dir = os.path.join('results', f'training_run_sgd_{timestamp}')
 os.makedirs(base_dir, exist_ok=True)
 
 # Save hyperparameters
@@ -198,9 +198,13 @@ for size_idx, train_size in enumerate(train_sizes):
     results[1, size_idx] = initial_test_error
     
     # Training setup
-    optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
+    #optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr, weight_decay=weight_decay)
+    #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
     
+    optimizer = optim.AdamW(model.parameters(), lr=initial_lr, weight_decay=weight_decay)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
+
+
     best_test_error = float('inf')
     best_model = None
     
