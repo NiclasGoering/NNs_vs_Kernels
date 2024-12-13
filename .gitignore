@@ -3,3 +3,5 @@ env_dev_1/
 results/
 *.sh
 *.json
+*.png
+data/

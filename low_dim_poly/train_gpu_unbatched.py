@@ -87,7 +87,7 @@ def compute_mse_prediction_batched(kernel_fn, k_train_train, k_test_train, y_tra
         assume_a='pos')
     return jnp.dot(k_test_train, solve)
 
-def main(results_dir='results', experiment_name='nt_prediction'):
+def main(results_dir='results', experiment_name='nngp_prediction'):
     # Configuration
     train_sizes = [10,100,1000,5000,20000,50000]
     test_size = 20000
@@ -96,7 +96,7 @@ def main(results_dir='results', experiment_name='nt_prediction'):
     degree = 5
     noise_std = 0.0
     hidden_dim = 400
-    kernel_type = 'ntk'
+    kernel_type = 'nngp'
     batch_size = 5000
 
     # Create network using Neural Tangents

@@ -229,7 +229,7 @@ def main(results_dir='results_kernel', experiment_name='ntk_400'):
     noise_std = 0.0
     hidden_dim = 400
     kernel_type = 'ntk'
-    batch_size = 500  # Reduced from 2000
+    batch_size = 2000  # Reduced from 2000
     output_batch_size = 2
 
     # Create network using Neural Tangents
