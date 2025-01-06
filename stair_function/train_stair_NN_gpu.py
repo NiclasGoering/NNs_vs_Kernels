@@ -197,7 +197,7 @@ def main():
         torch.cuda.manual_seed_all(42)
 
     # Parameters
-    experiment_name = "msp_NN_gpu"
+    experiment_name = "msp_NN_gpu_test"
     P = 8
     d = 30
     hidden_size = 800 # Made iteratable again
@@ -242,11 +242,15 @@ def main():
     msp = MSPFunction(P, msp_sets)
 
     # Generate test data
-    X_test = (2 * torch.bernoulli(0.5 * torch.ones((n_test, d), dtype=torch.float32)) - 1)
-    y_test = msp.evaluate(X_test)
-
-    with open(f'{results_dir}/test_data_{timestamp}.pkl', 'wb') as f:
-        pickle.dump((X_test, y_test), f)
+    test_data_path = f'{results_dir}/test_data.pkl'
+    if os.path.exists(test_data_path):
+        with open(test_data_path, 'rb') as f:
+            X_test, y_test = pickle.load(f)
+    else:
+        X_test = (2 * torch.bernoulli(0.5 * torch.ones((n_test, d), dtype=torch.float32)) - 1)
+        y_test = msp.evaluate(X_test)
+        with open(test_data_path, 'wb') as f:
+            pickle.dump((X_test, y_test), f)
 
     # Results storage
     results = []
