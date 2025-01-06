@@ -201,7 +201,7 @@ def main():
         torch.cuda.manual_seed_all(42)
 
     # Parameters
-    experiment_name = "msp_NN_gpu_test"
+    experiment_name = "no_overlap"
     P = 8
     d = 30
     hidden_size = 800 # Made iteratable again
@@ -221,7 +221,6 @@ def main():
     os.makedirs(results_dir, exist_ok=True)
 
     # Save hyperparameters
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     hyperparams = {
         'P': P,
         'd': d,
@@ -238,7 +237,9 @@ def main():
         'device': str(device)
     }
 
-    hyperparams_path = os.path.join(results_dir, f'hyperparameters_{timestamp}.json')
+    model_prefix = f'h{hidden_size}_d{depth}_n{n_train}_lr{lr}_{mode}'
+
+    hyperparams_path = os.path.join(results_dir, f'hyperparameters_{model_prefix}.json')
     with open(hyperparams_path, 'w') as f:
         json.dump(hyperparams, f, indent=4)
 
@@ -269,19 +270,15 @@ def main():
     X_train = (2 * torch.bernoulli(0.5 * torch.ones((n_train, d), dtype=torch.float32)) - 1)
     y_train = msp.evaluate(X_train)
 
-    with open(f'{results_dir}/train_data_{n_train}_{timestamp}.pkl', 'wb') as f:
+    with open(f'{results_dir}/train_data_{model_prefix}.pkl', 'wb') as f:
         pickle.dump((X_train, y_train), f)
-
-    # Save results at the start of each n_train iteration
-    save_results(results, results_dir, timestamp)
 
     # Train for different learning rates
     print(f"\nTraining with learning rate = {lr}")
 
     # Initialize and save initial model
     initial_model = DeepNN(d, hidden_size, depth, mode=mode)
-    model_prefix = f'h{hidden_size}_d{depth}_n{n_train}_lr{lr}_{mode}'
-    initial_model_path = os.path.join(results_dir, f'initial_model_{model_prefix}_{timestamp}.pt')
+    initial_model_path = os.path.join(results_dir, f'initial_model_{model_prefix}.pt')
     save_model(initial_model, initial_model_path)
 
     # Train model
@@ -294,7 +291,7 @@ def main():
     )
 
     # Save final model
-    final_model_path = os.path.join(results_dir, f'final_model_{model_prefix}_{timestamp}.pt')
+    final_model_path = os.path.join(results_dir, f'final_model_{model_prefix}.pt')
     save_model(model, final_model_path)
 
     # Store and save results
