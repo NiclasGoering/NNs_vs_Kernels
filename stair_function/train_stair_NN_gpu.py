@@ -138,8 +138,7 @@ def train_and_evaluate(model: nn.Module,
 
     # Get initial training error
     with torch.no_grad():
-        initial_train_pred = model(X_train)
-        initial_train_error = torch.mean((initial_train_pred - y_train) ** 2).item()
+        initial_train_error = calculate_error(X_train, y_train, batch_size, model, device)
 
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
