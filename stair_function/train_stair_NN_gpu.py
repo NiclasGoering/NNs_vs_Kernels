@@ -180,10 +180,14 @@ def train_and_evaluate(model: nn.Module,
 # [Previous class definitions (MSPFunction, DeepNN) and helper functions remain the same...]
 
 def main():
+    parser = argparse.ArgumentParser(description="Train a neural network on the MSP function.")
+    parser.add_argument('--n_train', type=int, help='Number of training samples')
+    args = parser.parse_args()
+    n_train = args.n_train
     # Set deterministic behavior
-    torch.manual_seed(42)
-    np.random.seed(42)
-    random.seed(42)
+    torch.manual_seed(n_train)
+    np.random.seed(n_train)
+    random.seed(n_train)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
