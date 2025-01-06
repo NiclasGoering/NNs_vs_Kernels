@@ -79,10 +79,10 @@ class DeepNN(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x).squeeze()
 
-def save_results(results: List[dict], results_dir: str, timestamp: str):
+def save_results(results: List[dict], results_dir: str, model_prefix: str):
     """Helper function to save results with error handling"""
     try:
-        results_path = os.path.join(results_dir, f'results_{timestamp}.json')
+        results_path = os.path.join(results_dir, f'results_{model_prefix}.json')
         os.makedirs(os.path.dirname(results_path), exist_ok=True)
         with open(results_path, 'w') as f:
             json.dump(results, f, indent=4)
@@ -302,7 +302,7 @@ def main():
         'final_train_error': final_train_error
     }
     results.append(result)
-    save_results(results, results_dir, timestamp)
+    save_results(results, results_dir, model_prefix)
 
     print(f"Results saved for h{hidden_size}_d{depth}, n_train = {n_train}, lr = {lr}, mode = {mode}")
     print(f"Best Test Error: {best_test_error:.6f}")
