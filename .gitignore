@@ -4,4 +4,11 @@ results/
 *.sh
 *.json
 *.png
+*.svg
+*.pdf
+*.btr
+*.pt
+*.npy
+*.npz
 data/
+/mnt/users/goringn/NNs_vs_Kernels/stair_function/metric_data

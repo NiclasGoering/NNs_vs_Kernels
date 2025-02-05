@@ -2,8 +2,8 @@
 
 # Environment setup first
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # Use the first RTX 6000 Ada
-os.environ['JAX_PLATFORM_NAME'] = 'gpu'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # Use the first RTX 6000 Ada
+#os.environ['JAX_PLATFORM_NAME'] = 'gpu'
 
 # Add these debug prints at the start of your code
 import jax
@@ -226,13 +226,13 @@ def main():
         print(f"NTK - Accuracy: {metrics['ntk']['accuracy']:.4f}, MSE: {metrics['ntk']['mse']:.4f}")
         
         # Save intermediate results
-        with open('wresnet_results_intermediate_gpu.json', 'w') as f:
+        with open('wresnet_results_intermediate_cpulong.json', 'w') as f:
             json.dump(results, f, indent=2)
     
     # Save final results
     with open('wresnet_results.json', 'w') as f:
         json.dump(results, f, indent=2)
-        print("\nResults saved to wresnet_results_gpu.json")
+        print("\nResults saved to wresnet_results_cpulong.json")
 
 if __name__ == '__main__':
     

@@ -38,9 +38,16 @@ class DeepNN(nn.Module):
         
         torch.set_default_dtype(torch.float32)
         
+        self.mode = mode
+        self.depth = depth
+        self.hidden_size = hidden_size
+        self.input_dim = d
+        
         layers = []
         prev_dim = d
-        for _ in range(depth):
+        self.layer_lrs = []  # Store layerwise learning rates
+        
+        for layer_idx in range(depth):
             linear = nn.Linear(prev_dim, hidden_size)
             
             if mode == 'special':
@@ -49,10 +56,23 @@ class DeepNN(nn.Module):
                 std = gain / np.sqrt(prev_dim)
                 nn.init.normal_(linear.weight, mean=0.0, std=std)
                 nn.init.zeros_(linear.bias)
-            else:
-                # Standard PyTorch initialization
+                self.layer_lrs.append(1.0)
+                
+            elif mode == 'spectral':
+                # Implement spectral initialization
+                fan_in = prev_dim
+                fan_out = hidden_size
+                # σℓ = Θ(1/√nℓ−1 · min(1,√(nℓ/nℓ−1)))
+                std = (1.0 / np.sqrt(fan_in)) * min(1.0, np.sqrt(fan_out / fan_in))
+                nn.init.normal_(linear.weight, mean=0.0, std=std)
+                nn.init.zeros_(linear.bias)
+                # ηℓ = Θ(nℓ/nℓ−1)
+                self.layer_lrs.append(float(fan_out) / fan_in)
+                
+            else:  # standard
                 nn.init.xavier_uniform_(linear.weight)
                 nn.init.zeros_(linear.bias)
+                self.layer_lrs.append(1.0)
             
             layers.extend([
                 linear,
@@ -60,11 +80,21 @@ class DeepNN(nn.Module):
             ])
             prev_dim = hidden_size
         
+        # Final layer
         final_layer = nn.Linear(prev_dim, 1)
         if mode == 'special':
             nn.init.normal_(final_layer.weight, std=0.01)
+            self.layer_lrs.append(1.0)
+        elif mode == 'spectral':
+            fan_in = prev_dim
+            fan_out = 1
+            std = (1.0 / np.sqrt(fan_in)) * min(1.0, np.sqrt(fan_out / fan_in))
+            nn.init.normal_(final_layer.weight, std=std)
+            self.layer_lrs.append(float(fan_out) / fan_in)
         else:
             nn.init.xavier_uniform_(final_layer.weight)
+            self.layer_lrs.append(1.0)
+            
         nn.init.zeros_(final_layer.bias)
         layers.append(final_layer)
         
@@ -72,6 +102,36 @@ class DeepNN(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x).squeeze()
+    
+    def get_layer_learning_rates(self, base_lr: float) -> List[float]:
+        """Return list of learning rates for each layer"""
+        return [base_lr * lr for lr in self.layer_lrs]
+
+def create_layer_specific_optimizer(model: DeepNN, base_lr: float, weight_decay: float):
+    """Create optimizer with layer-specific learning rates"""
+    if model.mode != 'spectral':
+        if model.mode == 'special':
+            return optim.AdamW(model.parameters(), lr=base_lr, weight_decay=weight_decay)
+        else:
+            return optim.SGD(model.parameters(), lr=base_lr, weight_decay=weight_decay)
+    
+    # For spectral mode, create parameter groups with different learning rates
+    layer_lrs = model.get_layer_learning_rates(base_lr)
+    param_groups = []
+    
+    linear_layer_idx = 0
+    for name, param in model.named_parameters():
+        if 'weight' in name or 'bias' in name:
+            param_groups.append({
+                'params': [param],
+                'lr': layer_lrs[linear_layer_idx // 2],  # Integer division because we have weight+bias for each layer
+                'weight_decay': weight_decay
+            })
+            if 'bias' in name:
+                linear_layer_idx += 1
+    
+    # Use SGD for spectral mode
+    return optim.SGD(param_groups, lr=base_lr)
 
 def save_results(results: List[dict], results_dir: str, timestamp: str):
     """Helper function to save results with error handling"""
@@ -106,11 +166,7 @@ def train_and_evaluate(model: nn.Module,
                       mode: str) -> Tuple[float, float, float, dict]:
     
     """Train the neural network and return best test error, training errors, and error history"""
-    if mode == 'special':
-        optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    else:
-        optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=weight_decay)
-    
+    optimizer = create_layer_specific_optimizer(model, lr, weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
     
     best_test_error = float('inf')
@@ -209,18 +265,18 @@ def main():
         torch.cuda.manual_seed_all(42 + rank)
     
     # Parameters (same as before)
-    experiment_name = "msp_NN_grid_1612_nogrokk_width50"
+    experiment_name = "msp_NN_grid_1612_nogrokk_standard"
     P = 8 
     d = 30
-    hidden_sizes = [50] #[10,20,30,40,50,75,85,100,120,150,200,300,400,500,600,800,1000,1500,2000,3000,4000]
-    depths =  [4] #[1,2,4,6,8]
+    hidden_sizes = [10,20,30,40,50,75,85,100,120,150,200,300,400,500,600,800,1000,1500,2000,3000,4000,5000,8000]
+    depths =  [1,4] #[1,2,4,6,8]
     n_test = 1000
     batch_size = 64
     epochs = 5000
     learning_rates = [0.005] #[0.00005,0.0001,0.0003,0.0005,0.0008,0.001,0.003,0.005,0.008,0.01]
     weight_decay = 1e-4
     mode = 'standard'
-    n_train_sizes = [10,50,100,200,300,400,500,800,1000,2500,5000,8000,10000,15000,20000]
+    n_train_sizes = [10,50,100,200,300,400,500,800,1000,2500,5000,8000,10000,15000,20000,30000,40000]
     
     # Define MSP sets
     msp_sets = [{7},{2,7},{0,2,7},{5,7,4},{1},{0,4},{3,7},{0,1,2,3,4,6,7}]
